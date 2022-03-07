@@ -1,0 +1,6 @@
+sklearn
+scipy
+pandas
+numpy>=1.21.4
+pelutils==0.6.9
+openpyxl
