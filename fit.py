@@ -25,6 +25,6 @@ def fit(df: pd.DataFrame, num_splits: int):
         diff = (n_pas - n_pas_pred)
         dev_per_fli = np.divide(diff, n_pas, out=np.zeros_like(diff), where=n_pas!=0) # Deviating per flight
         acc_per_fli = np.ones(len(dev_per_fli))- abs(dev_per_fli) # Accuracy per flight
-        acc = np.mean(acc_per_fli) # overall accuracy
+        acc = np.mean(acc_per_fli) # Overall accuracy
         
 
