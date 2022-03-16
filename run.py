@@ -1,10 +1,14 @@
 from data import load
 from fit import fit
 from pelutils import log, Levels
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
 
 
 if __name__ == "__main__":
-    #log.configure("case1.log", print_level=Levels.DEBUG)
+    log.configure("model.log")
     with log.log_errors:
-        df = load("Realized Schedule 20210101-20220208.xlsx")
-        fit(df, 5)
+        x, y, cols = load("train.xlsx")
+        E = fit(x, y, cols,
+            [RandomForestRegressor(n_estimators=10, n_jobs=-1), LinearRegression()], 5)
+        log("Final generalization error: %.4f" % E)
