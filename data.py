@@ -14,10 +14,8 @@ def _process(df: pd.DataFrame):
     log("Data has %i points after removing missing" % len(df))
     df['Year'] = df.ScheduleTime.apply(lambda text: str(text).split('-')[0])
     df['Month'] = df.ScheduleTime.apply(lambda text: str(text).split('-')[1])
-    df['datetime'] = df.ScheduleTime.apply(lambda text: str(text).split('-')[2])
-    df['Date'] = df.datetime.apply(lambda text: str(text).split(' ')[0])
-    df['Time'] = df.datetime.apply(lambda text: str(text).split(' ')[1])
-    df = df.drop('datetime', axis = 1) 
+    df['Date'] = df.ScheduleTime.apply(lambda x: int(str(x)[8:10]))
+    df['Hour'] = df.ScheduleTime.apply(lambda x: int(str(x)[11:13]))
     
     df_coded = df.copy()
     
