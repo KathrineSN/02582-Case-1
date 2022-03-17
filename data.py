@@ -1,44 +1,40 @@
+from __future__ import annotations
 import numpy as np
 import pandas as pd
 from pelutils import log
+from sklearn.preprocessing import OneHotEncoder
 
-
-def _process(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray, dict[str, int]]:
+def _process(df: pd.DataFrame):
     """ Performs some in-place preprocessing, e.g.
     converting ScheduleTime to float epoch time and
     converting categorical variables to integers. """
-    df["ScheduleTime"] = df["ScheduleTime"].values.astype(float) / 1e9
     log("Data has %i points before removing missing" % len(df))
     df = df.dropna()
+    # Splitting scheduled time into multiple columns
     log("Data has %i points after removing missing" % len(df))
-    str_cols = "Airline", "Destination", "AircraftType", "FlightType", "Sector"
-    datas = list()
-    cols = dict()
-    num_cols = 0
-    for col in str_cols:
-        df[col] = df[col].astype(str)
-        keys = { key: i for i, key in enumerate(pd.unique(df[col])) }
-        data = np.zeros((len(df), len(keys)))
-        data[np.arange(len(df)), [keys[v] for v in df[col].values]] = 1
-        cols[col] = num_cols
-        num_cols += len(keys)
-        datas.append(data)
-        log.debug("Found %i unique values for %s" % (len(keys), col))
-    for col in df.columns:
-        if col in str_cols:
-            continue
-        if col == "LoadFactor":
-            y = df[col].values
-            continue
-        datas.append(np.expand_dims(df[col].values, axis=1))
-        cols[col] = num_cols
-        num_cols += 1
-    return np.hstack(datas), y, cols
+    df['Year'] = df.ScheduleTime.apply(lambda text: str(text).split('-')[0])
+    df['Month'] = df.ScheduleTime.apply(lambda text: str(text).split('-')[1])
+    df['datetime'] = df.ScheduleTime.apply(lambda text: str(text).split('-')[2])
+    df['Date'] = df.datetime.apply(lambda text: str(text).split(' ')[0])
+    df['Time'] = df.datetime.apply(lambda text: str(text).split(' ')[1])
+    df = df.drop('datetime', axis = 1) 
+    
+    df_coded = df.copy()
+    
+    # Normalizing seat capacity and load factor
+    #df_coded['LoadFactor'] = (df_coded['LoadFactor']-df_coded['LoadFactor'].mean())/df_coded['LoadFactor'].std()
+    #df_coded['SeatCapacity'] = (df_coded['SeatCapacity']-df_coded['SeatCapacity'].mean())/df_coded['SeatCapacity'].std()
+    
+    
+    df_coded = df_coded.drop('ScheduleTime', axis = 1)
+    X = df_coded.loc[:, df_coded.columns != 'LoadFactor']
+    y = df_coded[['LoadFactor']]
+    
+    return df, df_coded, X, y
 
-def load(path: str) -> tuple[np.ndarray]:
+def load(path: str):
     log.section("Loading data from %s" % path)
     df = pd.read_excel(path)
     log("Preprocessing data")
-    x, y, cols = _process(df)
-    log("Loaded %i data points with %i features" % (x.shape[0], x.shape[1]))
-    return x, y, cols
+    df, df_coded, X, y = _process(df)
+    return df, df_coded, X, y
