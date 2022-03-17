@@ -8,6 +8,27 @@ from data import load
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_style('darkgrid')
+import numpy as np
+from typing import Iterable, Callable
+
+def linear_binning(x: Iterable, bins: int) -> np.ndarray:
+    """ Standard linear binning """
+    return np.linspace(min(x), max(x), bins)
+
+def get_bins(
+    data:         Iterable,
+    binning_fn:   Callable[[Iterable, int], Iterable] = linear_binning,
+    bins:         int  = 25,
+    density:      bool = True,
+    ignore_zeros: bool = False,
+):
+    """ Create bins for plotting a line histogram. Simplest usage is plt.plot(*get_bins(data)) """
+    bins = binning_fn(data, bins+1)
+    y, edges = np.histogram(data, bins=bins, density=density)
+    x = (edges[1:] + edges[:-1]) / 2
+    if ignore_zeros:
+        x, y = x[y>0], y[y>0]
+    return x, y
 
 df,df_coded,_,_ = load("train.xlsx")
 
