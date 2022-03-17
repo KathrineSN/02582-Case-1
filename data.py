@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from pelutils import log
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 
 def _process(df: pd.DataFrame):
     """ Performs some in-place preprocessing, e.g.
@@ -22,10 +22,11 @@ def _process(df: pd.DataFrame):
     df_coded = df.copy()
     
     # Normalizing seat capacity and load factor
-    #df_coded['LoadFactor'] = (df_coded['LoadFactor']-df_coded['LoadFactor'].mean())/df_coded['LoadFactor'].std()
-    #df_coded['SeatCapacity'] = (df_coded['SeatCapacity']-df_coded['SeatCapacity'].mean())/df_coded['SeatCapacity'].std()
+    df_coded['LoadFactor'] = (df_coded['LoadFactor']-df_coded['LoadFactor'].mean())/df_coded['LoadFactor'].std()
+    df_coded['SeatCapacity'] = (df_coded['SeatCapacity']-df_coded['SeatCapacity'].mean())/df_coded['SeatCapacity'].std()
     
-    
+    # One-hot encode
+    df_coded = pd.get_dummies(df, columns = ['Airline', 'Destination', 'AircraftType', 'FlightType', 'Sector', 'Year', 'Month', 'Date', 'Time'])
     df_coded = df_coded.drop('ScheduleTime', axis = 1)
     X = df_coded.loc[:, df_coded.columns != 'LoadFactor']
     y = df_coded[['LoadFactor']]
