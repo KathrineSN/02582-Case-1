@@ -24,7 +24,7 @@ def _process(df: pd.DataFrame):
     df_coded['SeatCapacity'] = (df_coded['SeatCapacity']-df_coded['SeatCapacity'].mean())/df_coded['SeatCapacity'].std()
     
     # One-hot encode
-    df_coded = pd.get_dummies(df, columns = ['Airline', 'Destination', 'AircraftType', 'FlightType', 'Sector', 'Year', 'Month', 'Date', 'Time'])
+    df_coded = pd.get_dummies(df, columns = ['Airline', 'Destination', 'AircraftType', 'FlightType', 'Sector', 'Year', 'Month', 'Date', 'Hour'])
     df_coded = df_coded.drop('ScheduleTime', axis = 1)
     X = df_coded.loc[:, df_coded.columns != 'LoadFactor']
     y = df_coded[['LoadFactor']]

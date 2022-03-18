@@ -30,77 +30,102 @@ def get_bins(
         x, y = x[y>0], y[y>0]
     return x, y
 
+#%% Data load
 df,df_coded,_,_ = load("train.xlsx")
 
-# Data visualizations
+#%% Information about dataframe
 print('Number of unique instances in each category')
 print(df.nunique())
 
-# Plotting correlations
+#%% Plotting correlations
 sns.pairplot(df)
+plt.savefig('pairplot.png', dpi = 200)
+plt.close()
 
+#%% Number of flight per month in each sector
 # Number of flights in each sector by month
 df_grouped_month = df.groupby(['Sector','Month']).size().unstack()
 print(df_grouped_month)
 
-# Plotting the locations
 fig = plt.figure(figsize=(15, 18))
 for plot_index in range(1, 13):
-    # Creating a subplot placeholder corresponding to a category
     fig = plt.subplot(6, 2, plot_index)
-    # Make a space between the different rows of plots
     plt.subplots_adjust(hspace = 0.55)
-
-    # P.S. I can of course remove the labels from all but the last 2 plots, and make the x-axis year labels show from 2 to 2 years, however I kept this style, since I believe it is more beautiful this way
     
     ax = sns.barplot(x = df_grouped_month.iloc[plot_index - 1].index, y = df_grouped_month.iloc[plot_index - 1].values, color = sns.color_palette()[0])
     plt.margins(y = 0.25, x = 0.05) # set the inner margins between plot values and plot
     plt.title(df_grouped_month.iloc[plot_index - 1].name, y = 0.80, x = 0.05, loc = 'left') # set indentation 'left' and x, y added/subtracted, compared to the default values
-plt.show()
+    plt.xlim([-1,12])
+plt.tight_layout()
+plt.savefig('Flights_per_month_per_sector.png', dpi = 200)
+plt.close()
+
 
 # Number of flights in each sector by date
 df_grouped_date = df.groupby(['Sector','Date']).size().unstack()
 
-# Plotting the locations
 fig = plt.figure(figsize=(15, 18))
 for plot_index in range(1, 13):
-    # Creating a subplot placeholder corresponding to a category
     fig = plt.subplot(6, 2, plot_index)
-    # Make a space between the different rows of plots
     plt.subplots_adjust(hspace = 0.55)
 
-    # P.S. I can of course remove the labels from all but the last 2 plots, and make the x-axis year labels show from 2 to 2 years, however I kept this style, since I believe it is more beautiful this way
     ax = sns.barplot(x = df_grouped_date.iloc[plot_index - 1].index, y = df_grouped_date.iloc[plot_index - 1].values, color = sns.color_palette()[0])
     plt.margins(y = 0.25, x = 0.05) # set the inner margins between plot values and plot
+    plt.xlim([-1,31])
     plt.title(df_grouped_date.iloc[plot_index - 1].name, y = 0.80, x = 0.05, loc = 'left') # set indentation 'left' and x, y added/subtracted, compared to the default values
-plt.show()
+plt.tight_layout()
+plt.savefig('Flights_per_day_per_sector.png', dpi = 200)
+plt.close()
 
-# Histograms
+#%% Histograms of continuous variables
 fig, ax = plt.subplots(figsize=(17,12), 
-                       nrows=3, 
+                       nrows=2, 
                        ncols=3)
 
-fig.suptitle('Features of King County Homes Sold in 2014 and 2015', 
-             fontsize=21)#use a for loop to create each subplot:
+fig.suptitle('Distribution of Continuous Features', 
+             fontsize=21) #use a for loop to create each subplot:
 features = ['LoadFactor', 
+       'SeatCapacity',
        'Month', 
        'Date', 
-       'floors', 
-       'condition', 
-       'yr_built' ]
+       'Year', 
+       'Hour']
 for feat in features:
-    row = features.index(feat)//num_cols
-    col = features.index(feat)%num_cols
+    row = features.index(feat)//3
+    col = features.index(feat)%3
     
     ax[row, col].hist(df[feat], bins=20)
-    ax[row, col].set_title(feat.title()+' Distribution', 
+    ax[row, col].set_title(feat.title(), 
                            fontsize=18)
     ax[row, col].set_xlabel(feat.title(),
-                            fontsize=15)
-    ax[row, col].set_ylabel('Number of Homes',
-                            fontsize=15)
+                            fontsize=14)
+    ax[row, col].set_ylabel('Count',
+                            fontsize=14)
     
 plt.subplots_adjust(top=0.9, wspace=0.3, hspace=0.3)
+plt.savefig('hist_continuous_features.png', dpi = 200)
+plt.close()
 
-plt.hist(df_coded['LoadFactor'].values, bins = 20)
-plt.show()
+
+#%% Additional histogram of flightnumber
+plt.figure(figsize = (5,5))
+plt.hist(df['FlightNumber'], bins = 20)
+plt.title('FlightNumber', fontsize=18)
+plt.xlabel('FlightNumber',fontsize=14)
+plt.ylabel('Count',fontsize=14)
+plt.tight_layout()
+plt.savefig('hist_FlightNumber.png', dpi = 200)
+plt.close()
+
+#%% Bar plots of continuous variables
+features = ['FlightType',  
+       'AircraftType', 
+       'Sector']
+fig = plt.figure(figsize = (20,5))
+fig.suptitle('Distribution of Categorical features', fontsize = 21)
+for i in range(len(features)):
+    plt.subplot(1,3,i+1)
+    df[features[i]].value_counts().plot.bar(title = features[i])
+plt.tight_layout()
+plt.savefig('bar_categorical_features.png', dpi = 200)
+plt.close()
