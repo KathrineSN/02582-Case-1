@@ -5,13 +5,12 @@ import numpy as np
 from pelutils import log
 
 
-def total_accuracy(y: np.ndarray, y_hat: np.ndarray) -> float:
+def error(y: np.ndarray, y_hat: np.ndarray) -> float:
     non_zero = y > 0
     y, y_hat = y[non_zero], y_hat[non_zero]
-    return (1 - np.abs(y-y_hat)).mean()
-    dev = (y* - y_hat) / y
+    dev = 1 - y_hat / y
     acc = 1 - np.abs(dev)
-    return acc.mean()
+    return np.abs(dev).mean()
 
 def fit(x: np.ndarray, y: np.ndarray, cols: dict[str, int], models, num_splits: int):
     # Page 175 in ML book
@@ -38,17 +37,17 @@ def fit(x: np.ndarray, y: np.ndarray, cols: dict[str, int], models, num_splits: 
             for s in range(S):
                 models[s].fit(x_train, y_train)
                 y_hat = models[s].predict(x_val)
-                E_val[j, s] = total_accuracy(y_val, y_hat)
+                E_val[j, s] = error(y_val, y_hat)
 
         E_gen_hat = np.zeros(S)
         for s in range(S):
             E_gen_hat[s] = np.sum(D_val_sizes / len(x_par) * E_val[:, s])
 
         s_star = np.argmin(E_gen_hat)
-        log("Best model: %i" % s_star)
+        log("Best model: %i with acc %.2f %%" % (s_star, 100*(1-E_gen_hat[s_star])))
         models[s_star].fit(x_par, y_par)
         y_hat = models[s_star].predict(x_test)
-        E_test[i] = total_accuracy(y_test, y_hat)
+        E_test[i] = error(y_test, y_hat)
 
     E_gen_hat = np.sum(D_test_sizes/N*E_test)
     return E_gen_hat
