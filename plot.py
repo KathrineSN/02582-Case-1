@@ -82,7 +82,7 @@ fig, ax = plt.subplots(figsize=(17,12),
                        nrows=2, 
                        ncols=3)
 
-fig.suptitle('Distribution of Continuous Features', 
+fig.suptitle('Distribution of Numerical Features', 
              fontsize=21) #use a for loop to create each subplot:
 features = ['LoadFactor', 
        'SeatCapacity',
@@ -96,14 +96,14 @@ for feat in features:
     
     ax[row, col].hist(df[feat], bins=20)
     ax[row, col].set_title(feat.title(), 
-                           fontsize=18)
+                           fontsize=20)
     ax[row, col].set_xlabel(feat.title(),
-                            fontsize=14)
+                            fontsize=18)
     ax[row, col].set_ylabel('Count',
-                            fontsize=14)
+                            fontsize=18)
     
 plt.subplots_adjust(top=0.9, wspace=0.3, hspace=0.3)
-plt.savefig('hist_continuous_features.png', dpi = 200)
+plt.savefig('hist_numerical_features.png', dpi = 200)
 plt.close()
 
 
