@@ -1,66 +1,48 @@
+from __future__ import annotations
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import KFold
 import pandas as pd
 import numpy as np
-from pelutils import log
+from pelutils import log, TT
 
+def predict(model, x):
+    y = model.predict(normalize(x))
+    y[y<0] = 0
+    y[y>1.3] = 1.3
+    return y
+
+def normalize(x):
+    x = x.copy()
+    for col in x.columns:
+        if x.dtypes[col] != np.uint8 and x.dtypes[col] != bool:
+            x[col] = (x[col].values - x[col].values.mean()) / (x[col].values.std()+1e6)
+    return x
 
 def error(y: np.ndarray, y_hat: np.ndarray) -> float:
     non_zero = y > 0
     y, y_hat = y[non_zero], y_hat[non_zero]
     dev = 1 - y_hat / y
-    acc = 1 - np.abs(dev)
     return np.abs(dev).mean()
 
-def fit(x: np.ndarray, y: np.ndarray, cols: dict[str, int], models, num_splits: int):
+def fit(x: pd.DataFrame, y: np.ndarray, models: list, num_splits: int) -> list[tuple]:
+    # Returns a list of tuples (model, weight, mean total accuracy)
     # Page 175 in ML book
-    log.section("Fitting model using %i splits" % num_splits)
     N = len(x)
     S = len(models)
-    K1 = K2 = num_splits
+    log.section("Fitting %i models using %i splits" % (S, num_splits))
 
-    E_test = np.zeros(K1)
-    D_test_sizes = np.zeros(K1)
-    for i, (par_idx, test_idx) in enumerate(KFold(n_splits=K1).split(x)):
-        log("Outer loop %i / %i" % (i+1, K1))
-        D_test_sizes[i] = len(test_idx)
-        x_par, x_test = x[par_idx], x[test_idx]
-        y_par, y_test = y[par_idx], y[test_idx]
-
-        E_val = np.zeros((K2, S))
-        D_val_sizes = np.zeros(K2)
-        for j, (train_idx, val_idx) in enumerate(KFold(n_splits=K2).split(par_idx)):
-            D_val_sizes[j] = len(val_idx)
-            x_train, y_train = x[train_idx], y[train_idx]
-            x_val, y_val = x[val_idx], y[val_idx]
-
-            for s in range(S):
-                models[s].fit(x_train, y_train)
-                y_hat = models[s].predict(x_val)
-                E_val[j, s] = error(y_val, y_hat)
-
-        E_gen_hat = np.zeros(S)
+    E_val = np.empty((S, num_splits))
+    for i, (train_idx, val_idx) in enumerate(KFold(n_splits=num_splits, shuffle=True).split(x)):
+        log("Split %i / %i" % (i+1, num_splits))
+        x_train, y_train = x.iloc[train_idx], y[train_idx]
+        x_val, y_val = x.iloc[val_idx], y[val_idx]
         for s in range(S):
-            E_gen_hat[s] = np.sum(D_val_sizes / len(x_par) * E_val[:, s])
+            log.debug("Fitting model %i / %i: %s" % (s+1, S, models[s]))
+            with TT.profile("Fit %s" % models[s]):
+                models[s].fit(x_train, y_train)
+            y_hat = predict(models[s], x_val)
+            E_val[s, i] = error(y_val, y_hat)
 
-        s_star = np.argmin(E_gen_hat)
-        log("Best model: %i with acc %.2f %%" % (s_star, 100*(1-E_gen_hat[s_star])))
-        models[s_star].fit(x_par, y_par)
-        y_hat = models[s_star].predict(x_test)
-        E_test[i] = error(y_test, y_hat)
-
-    E_gen_hat = np.sum(D_test_sizes/N*E_test)
-    return E_gen_hat
-
-        # M = models[s]
-        # model.fit(x_train, y_train)
-        # y_pred = model.predict(x_test)
-
-        # # Deviation per flight
-        # n_pas_pred = np.ceil(y_pred * x_test[cols['SeatCapacity']]) # number of predicted passengers
-        # n_pas = np.ceil(y_test * x_test[cols['SeatCapacity']]) # actual number of passengers
-
-        # diff = (n_pas - n_pas_pred)
-        # dev_per_fli = np.divide(diff, n_pas, out=np.zeros_like(diff), where=n_pas!=0) # Deviating per flight
-        # acc_per_fli = np.ones(len(dev_per_fli))- abs(dev_per_fli) # Accuracy per flight
-        # acc = np.mean(acc_per_fli) # Overall accuracy
+    best_models = E_val.argmin(axis=0)
+    model_idcs, counts = np.unique(best_models, return_counts=True)
+    return [(models[s], c/num_splits, E_val[s].mean()) for s, c in zip(model_idcs, counts)]
