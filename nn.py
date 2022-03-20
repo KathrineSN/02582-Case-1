@@ -13,9 +13,8 @@ def error(y, y_hat):
     dev = 1 - y_hat / y
     return torch.abs(dev).mean()
 
-
 class NN(nn.Module):
-    def __init__(self, hidden=(100,), epochs=10):
+    def __init__(self, hidden=(200, 100), epochs=20):
         super().__init__()
         self.hidden = hidden
         self.lr = 1e-4
@@ -38,17 +37,21 @@ class NN(nn.Module):
         layers.pop()
         self.model = nn.Sequential(*layers)
         self.optim = optim.Adam(self.parameters(), lr=self.lr)
+        self.to(device)
         for i in range(self.epochs):
-            dataloader = iter(DataLoader(dataset, batch_size=50, shuffle=True))
+            dataloader = iter(DataLoader(dataset, batch_size=500, shuffle=True))
             for j, (xb, yb) in enumerate(dataloader):
                 y_hat = self(xb)
                 loss = error(yb, y_hat)
-                self.optim.zero_grad()
                 loss.backward()
                 self.optim.step()
+                self.optim.zero_grad()
             log.debug("%i, %.4f" % (i, loss.item()))
 
     def predict(self, X):
+        self.eval()
         with torch.no_grad():
             X = torch.from_numpy(X.to_numpy(copy=True).astype(np.float32)).to(device)
-            return self(X).detach().numpy().ravel()
+            res = self(X).detach().cpu().numpy().ravel()
+        self.train()
+        return res
