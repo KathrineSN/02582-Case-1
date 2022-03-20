@@ -5,6 +5,7 @@ from sklearn.ensemble import RandomForestRegressor, BaggingRegressor
 from sklearn.linear_model import LinearRegression, Lasso
 from sklearn.neural_network import MLPRegressor
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def predicter(models, x):
@@ -23,7 +24,7 @@ if __name__ == "__main__":
             X.iloc[:num_train],
             y[:num_train],
             [
-                RandomForestRegressor(n_estimators=5),
+                RandomForestRegressor(n_estimators=20),
                 # RandomForestRegressor(n_estimators=20, n_jobs=-1),
                 # RandomForestRegressor(n_estimators=50, n_jobs=-1),
                 # RandomForestRegressor(n_estimators=20, n_jobs=-1, min_samples_leaf=4),
@@ -38,7 +39,7 @@ if __name__ == "__main__":
                 # # MLPRegressor((20, 10)),
                 # MLPRegressor((50, 20)),
             ],
-            num_splits=4,
+            num_splits=5,
         )
 
         log.debug("CV time distribution", TT)
@@ -52,6 +53,17 @@ if __name__ == "__main__":
         y_hat = predicter(models, X[num_train:])
         test_error = error(y[num_train:], y_hat)
         log("Final error: %.4f" % test_error)
+        plt.figure(figsize=(20, 10))
+        plt.subplot(121)
+        plt.scatter(y[num_train:], y_hat, s=2)
+        plt.gca().set_aspect('equal')
+        plt.grid()
+        plt.subplot(122)
+        plt.scatter(y[num_train:], np.abs(1-y_hat/y[num_train:]), s=2)
+        plt.grid()
+        plt.tight_layout()
+        plt.savefig("preds.png")
+        plt.close()
 
         log.section("Predicting on test set")
         log("Retraining model")
