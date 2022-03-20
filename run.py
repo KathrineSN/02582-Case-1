@@ -4,6 +4,7 @@ from pelutils import log, Levels, TT, Table
 from sklearn.ensemble import RandomForestRegressor, BaggingRegressor
 from sklearn.linear_model import LinearRegression, Lasso
 from sklearn.neural_network import MLPRegressor
+from sklearn.model_selection import train_test_split
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -20,12 +21,14 @@ if __name__ == "__main__":
         _, X, y, keep, all_cats = load("train.xlsx")
         log("%i data points with %i features" % (len(X), len(X.columns)))
         num_train = int(0.2*len(X))
+        X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.1)
+
         models = fit(
-            X.iloc[:num_train],
-            y[:num_train],
+            X_train,
+            y_train,
             [
-                RandomForestRegressor(n_estimators=20),
-                # RandomForestRegressor(n_estimators=20, n_jobs=-1),
+                # RandomForestRegressor(n_estimators=20),
+                RandomForestRegressor(n_estimators=20, n_jobs=-1),
                 # RandomForestRegressor(n_estimators=50, n_jobs=-1),
                 # RandomForestRegressor(n_estimators=20, n_jobs=-1, min_samples_leaf=4),
                 # RandomForestRegressor(n_estimators=50, n_jobs=-1, min_samples_leaf=4),
@@ -35,7 +38,7 @@ if __name__ == "__main__":
                 # BaggingRegressor(RandomForestRegressor(n_estimators=50, n_jobs=-1, min_samples_leaf=4)),
                 # Lasso(alpha=0.0001),
                 # # Lasso(alpha=0.001),
-                # LinearRegression(n_jobs=-1),
+                LinearRegression(),
                 # # MLPRegressor((20, 10)),
                 # MLPRegressor((50, 20)),
             ],
@@ -50,16 +53,16 @@ if __name__ == "__main__":
             table.add_row([model, "%.4f" % weight], [1, 0])
             model.fit(X.iloc[:num_train], y[:num_train])
         log("Models", table)
-        y_hat = predicter(models, X[num_train:])
-        test_error = error(y[num_train:], y_hat)
+        y_hat = predicter(models, X_val)
+        test_error = error(y_val, y_hat)
         log("Final error: %.4f" % test_error)
         plt.figure(figsize=(20, 10))
         plt.subplot(121)
-        plt.scatter(y[num_train:], y_hat, s=2)
+        plt.scatter(y_val, y_hat, s=2)
         plt.gca().set_aspect('equal')
         plt.grid()
         plt.subplot(122)
-        plt.scatter(y[num_train:], np.abs(1-y_hat/y[num_train:]), s=2)
+        plt.scatter(y_val, np.abs(1-y_hat/y_val), s=2)
         plt.grid()
         plt.tight_layout()
         plt.savefig("preds.png")
