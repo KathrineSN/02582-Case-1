@@ -23,8 +23,6 @@ def normalize(x):
     return x
 
 def error(y: np.ndarray, y_hat: np.ndarray) -> float:
-    non_zero = y > 0
-    y, y_hat = y[non_zero], y_hat[non_zero]
     dev = 1 - y_hat / y
     return np.abs(dev).mean()
 

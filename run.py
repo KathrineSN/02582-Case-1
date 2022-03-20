@@ -1,5 +1,6 @@
 from data import load
 from fit import fit, error, predict, feature_importance
+from nn import NN
 from pelutils import log, Levels, TT, Table
 from sklearn.ensemble import RandomForestRegressor, BaggingRegressor
 from sklearn.linear_model import LinearRegression, Lasso
@@ -9,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_style()
+import warnings
 
 
 def predicter(models, x):
@@ -20,18 +22,18 @@ def predicter(models, x):
 if __name__ == "__main__":
     log.configure("model.log", print_level=Levels.DEBUG)
     with log.log_errors:
+        warnings.simplefilter("ignore")
         _, X, y, keep, all_cats,_ = load("train.xlsx")
         feature_importance(X,y)
         log("%i data points with %i features" % (len(X), len(X.columns)))
-        num_train = int(0.2*len(X))
-        X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.1)
+        X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2)
 
         models = fit(
             X_train,
             y_train,
             [
                 # RandomForestRegressor(n_estimators=20),
-                RandomForestRegressor(n_estimators=20, n_jobs=-1),
+                # RandomForestRegressor(n_estimators=20, n_jobs=-1),
                 # RandomForestRegressor(n_estimators=50, n_jobs=-1),
                 # RandomForestRegressor(n_estimators=20, n_jobs=-1, min_samples_leaf=4),
                 # RandomForestRegressor(n_estimators=50, n_jobs=-1, min_samples_leaf=4),
@@ -41,9 +43,10 @@ if __name__ == "__main__":
                 # BaggingRegressor(RandomForestRegressor(n_estimators=50, n_jobs=-1, min_samples_leaf=4)),
                 # Lasso(alpha=0.0001),
                 # # Lasso(alpha=0.001),
-                LinearRegression(),
+                # LinearRegression(),
                 # # MLPRegressor((20, 10)),
                 # MLPRegressor((50, 20)),
+                NN(),
             ],
             num_splits=5,
         )
@@ -54,8 +57,8 @@ if __name__ == "__main__":
         table.add_header(["Model", "weight"])
         for model, weight, _ in models:
             table.add_row([model, "%.4f" % weight], [1, 0])
-            model.fit(X.iloc[:num_train], y[:num_train])   
-                    
+            model.fit(X_train, y_train)
+
         log("Models", table)
         y_hat = predicter(models, X_val)
         test_error = error(y_val, y_hat)
@@ -78,7 +81,7 @@ if __name__ == "__main__":
             log.debug(model)
             model.fit(X, y)
         col_order = X.columns
-        _, X, y, *_ = load("test.xlsx", keep, all_cats)
+        X, y, *_ = load("test.xlsx", keep, all_cats)
         X = X[col_order].copy()
         log("Predicting test data")
         y_hat = predicter(models, X)
