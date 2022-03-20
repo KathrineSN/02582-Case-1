@@ -84,7 +84,7 @@ def _process(df: pd.DataFrame, keep: dict[str, pd.Series], all_cats):
     X = df.loc[:, df.columns != 'LoadFactor']
     y = df[['LoadFactor']].values.ravel()
 
-    return df, X, y, keep, all_cats, df_init
+    return X, y, keep, all_cats, df_init
 
 def load(path: str, keep: dict[str, pd.Series]=None, all_cats=list()):
     log.section("Loading data from %s" % path)
@@ -92,8 +92,9 @@ def load(path: str, keep: dict[str, pd.Series]=None, all_cats=list()):
     if path == "test.xlsx":
         df["LoadFactor"] = 0
     log("Preprocessing data")
-    df, X, y, keep, all_cats, df_init = _process(df, keep, all_cats)
+    X, y, keep, all_cats, df_init = _process(df, keep, all_cats)
     if path == "train.xlsx":
-        df = df.loc[df.LoadFactor > 0].copy()
-        log("Data has %i data points after limiting to positive LoadFactor" % len(df))
-    return df, X, y, keep, all_cats, df_init
+        X = X.iloc[y>0].copy()
+        y = y[y>0].copy()
+        log("Data has %i data points after limiting to positive LoadFactor" % len(y))
+    return X, y, keep, all_cats, df_init
