@@ -57,13 +57,22 @@ def feature_importance(X,y):
     feature_importances = model.feature_importances_
     forest_importances = pd.Series(feature_importances, index=X.columns)
     topten = forest_importances.sort_values(ascending = False)[0:10]
+    lowten = forest_importances.sort_values(ascending = True)[0:10]
     feature_vals = np.flip(np.sort(feature_importances))
+    feature_vals_low = np.sort(feature_importances)
     tol = 0.5
+    tol_low = 0.01
     gini_im = 0
+    gini_im_low = 0
     for i in range(len(feature_vals)):
         gini_im += feature_vals[i]
         if gini_im >= tol:
             num_features = i+1
+            break
+    for j in range(len(feature_vals_low)):
+        gini_im_low += feature_vals_low[i]
+        if gini_im_low >= tol_low:
+            num_features_low = j+1
             break
     topten.plot.bar()
     plt.title('10 most important features')
@@ -73,3 +82,4 @@ def feature_importance(X,y):
     plt.close()
     log("Number of features to obtain a gini importance of 0.5:", num_features)
     log("Ten most important features", topten) 
+    log("Ten least important features", lowten) 

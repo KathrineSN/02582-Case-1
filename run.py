@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set_style()
+sns.set_style('darkgrid')
 import warnings
 
 
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     log.configure("model.log", print_level=Levels.DEBUG)
     with log.log_errors:
         warnings.simplefilter("ignore")
-        _, X, y, keep, all_cats,_ = load("train.xlsx")
+        X, y, keep, all_cats,_ = load("train.xlsx")
         feature_importance(X,y)
         log("%i data points with %i features" % (len(X), len(X.columns)))
         X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2)

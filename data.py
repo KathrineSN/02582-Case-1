@@ -70,7 +70,7 @@ def _process(df: pd.DataFrame, keep: dict[str, pd.Series], all_cats):
             df[tc+"half"] = df[tc] % periods[tc] > periods[tc] / 2
             df[tc] = np.sin(2*np.pi/periods[tc]*(df[tc]-periods[tc]/4)) / 2 + 1 / 2
 
-    df, keep = _group_categoricals(df, keep)
+    #df, keep = _group_categoricals(df, keep)
 
     df = pd.get_dummies(df, columns=oh_cols)
     df = df.drop('ScheduleTime', axis=1).copy()
