@@ -38,7 +38,7 @@ def fit(x: pd.DataFrame, y: np.ndarray, models: list, num_splits: int) -> list[t
         x_val, y_val = x.iloc[val_idx], y[val_idx]
         for s in range(S):
             log.debug("Fitting model %i / %i: %s" % (s+1, S, models[s]))
-            with TT.profile("Fit %s" % models[s]):
+            with TT.profile("%s" % models[s]):
                 models[s].fit(x_train, y_train)
             y_hat = predict(models[s], x_val)
             E_val[s, i] = error(y_val, y_hat)
