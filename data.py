@@ -44,7 +44,9 @@ def _process(df: pd.DataFrame, keep: dict[str, pd.Series], all_cats):
     df['Month'] = df.ScheduleTime.apply(lambda text: str(text).split('-')[1])
     df['Date'] = df.ScheduleTime.apply(lambda x: str(x)[8:10])
     df['Hour'] = df.ScheduleTime.apply(lambda x: str(x)[11:13])
+    df['Weekday'] = df['ScheduleTime'].dt.day_name()
 
+    df_init = df.copy()
     df = df.copy()
     df.loc[(df["FlightType"]=="O").values, "FlightType"] = "C"
     df.loc[(df["FlightType"]=="G").values, "FlightType"] = "J"
@@ -54,7 +56,7 @@ def _process(df: pd.DataFrame, keep: dict[str, pd.Series], all_cats):
     # One-hot encode
     time_cols = ["Month", "Date", "Hour"]
     periods = {"Month": 12, "Date": 31, "Hour": 24}
-    oh_cols = ['Airline', 'Destination', 'AircraftType', 'FlightType', 'Sector']
+    oh_cols = ['Airline', 'Destination', 'AircraftType', 'FlightType', 'Sector', 'Weekday']
     if time_handling == TimeHandling.ONEHOT:
         oh_cols += time_cols
     elif time_handling == TimeHandling.NONE:
@@ -82,7 +84,7 @@ def _process(df: pd.DataFrame, keep: dict[str, pd.Series], all_cats):
     X = df.loc[:, df.columns != 'LoadFactor']
     y = df[['LoadFactor']].values.ravel()
 
-    return df, X, y, keep, all_cats
+    return df, X, y, keep, all_cats, df_init
 
 def load(path: str, keep: dict[str, pd.Series]=None, all_cats=list()):
     log.section("Loading data from %s" % path)
@@ -90,8 +92,8 @@ def load(path: str, keep: dict[str, pd.Series]=None, all_cats=list()):
     if path == "test.xlsx":
         df["LoadFactor"] = 0
     log("Preprocessing data")
-    df, X, y, keep, all_cats = _process(df, keep, all_cats)
+    df, X, y, keep, all_cats, df_init = _process(df, keep, all_cats)
     if path == "train.xlsx":
         df = df.loc[df.LoadFactor > 0].copy()
         log("Data has %i data points after limiting to positive LoadFactor" % len(df))
-    return df, X, y, keep, all_cats
+    return df, X, y, keep, all_cats, df_init

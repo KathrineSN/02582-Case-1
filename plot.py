@@ -10,6 +10,7 @@ import seaborn as sns
 sns.set_style('darkgrid')
 import numpy as np
 from typing import Iterable, Callable
+import pandas as pd
 
 def linear_binning(x: Iterable, bins: int) -> np.ndarray:
     """ Standard linear binning """
@@ -31,7 +32,7 @@ def get_bins(
     return x, y
 
 #%% Data load
-df,df_coded,_,_ = load("train.xlsx")
+df,X,y,keep,all_cats,df_init = load("train.xlsx")
 
 #%% Information about dataframe
 print('Number of unique instances in each category')
@@ -129,3 +130,24 @@ for i in range(len(features)):
 plt.tight_layout()
 plt.savefig('bar_categorical_features.png', dpi = 200)
 plt.close()
+
+#%%  Loadfactor grupperet på måned
+
+df_loadfactor = df['LoadFactor'].rolling(7).mean()
+plt.plot(df['ScheduleTime'],df_loadfactor)
+
+#%%
+df['LoadFactor'].rolling(100).mean().plot(x = df['ScheduleTime'])
+
+
+#%%
+#df['ScheduleTime'] = pd.to_datetime(df['ScheduleTime'])
+plt.plot(df['ScheduleTime'],df['LoadFactor'].rolling(7).mean())
+
+#%%
+sns.lineplot(x = 'ScheduleTime', y = 'LoadFactor', data = df)
+
+#%%
+
+
+
