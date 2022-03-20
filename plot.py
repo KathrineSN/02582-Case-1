@@ -7,7 +7,7 @@ Created on Thu Mar 17 10:46:30 2022
 from data import load
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set_style('darkgrid')
+sns.set_style()
 import numpy as np
 from typing import Iterable, Callable
 import pandas as pd

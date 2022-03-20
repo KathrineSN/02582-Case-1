@@ -1,9 +1,13 @@
 from __future__ import annotations
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold
 import pandas as pd
 import numpy as np
-from pelutils import log, TT
+from pelutils import log, TT, Levels
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set_style('darkgrid')
 
 def predict(model, x):
     y = model.predict(normalize(x))
@@ -46,3 +50,28 @@ def fit(x: pd.DataFrame, y: np.ndarray, models: list, num_splits: int) -> list[t
     best_models = E_val.argmin(axis=0)
     model_idcs, counts = np.unique(best_models, return_counts=True)
     return [(models[s], c/num_splits, E_val[s].mean()) for s, c in zip(model_idcs, counts)]
+
+def feature_importance(X,y):
+    num_train = int(0.2*len(X))
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.1)
+    model = RandomForestRegressor(n_estimators=20, n_jobs=-1)
+    model.fit(X.iloc[:num_train], y[:num_train]) 
+    feature_importances = model.feature_importances_
+    forest_importances = pd.Series(feature_importances, index=X.columns)
+    topten = forest_importances.sort_values(ascending = False)[0:10]
+    feature_vals = np.flip(np.sort(feature_importances))
+    tol = 0.5
+    gini_im = 0
+    for i in range(len(feature_vals)):
+        gini_im += feature_vals[i]
+        if gini_im >= tol:
+            num_features = i+1
+            break
+    topten.plot.bar()
+    plt.title('10 most important features')
+    plt.ylabel('Gini importance')
+    plt.tight_layout()
+    plt.savefig('Feature_importance.png', dpi = 200)
+    plt.close()
+    log("Number of features to obtain a gini importance of 0.5:", num_features)
+    log("Ten most important features", topten) 
