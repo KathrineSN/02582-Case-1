@@ -16,7 +16,7 @@ time_handling = TimeHandling.CIRCULAR
 
 def _group_categoricals(df: pd.DataFrame, keep_cats: dict[str, pd.Series]) -> dict[str, pd.Series]:
     log("Removing rare categories")
-    cats = [("Airline", 0.95), ("Destination", 0.95), ("AircraftType", 0.95), ("Sector", 0.97)]
+    cats = [("Airline", 0.95), ("Destination", 0.95), ("AircraftType", 0.97), ("Sector", 0.97)]
     df = df.copy()
     if keep_cats is None:
         keep_cats = dict()
@@ -64,9 +64,7 @@ def _process(df: pd.DataFrame, keep: dict[str, pd.Series], all_cats):
             df[tc] = df[tc].apply(int)
     elif time_handling == TimeHandling.CIRCULAR:
         for tc in time_cols:
-            df[tc] = df[tc].apply(int)
-            if tc != "Hour":
-                df[tc] = df[tc] - 1
+            df[tc] = df[tc].apply(float)
             df[tc+"half"] = df[tc] % periods[tc] > periods[tc] / 2
             df[tc] = np.sin(2*np.pi/periods[tc]*(df[tc]-periods[tc]/4)) / 2 + 1 / 2
 
