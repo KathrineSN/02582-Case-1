@@ -114,5 +114,5 @@ def feature_importance(X,y):
     plt.savefig('Feature_importance.png', dpi = 200)
     plt.close()
     log("Number of features to obtain a gini importance of 0.5:", num_features)
-    log("Ten most important features", topten) 
-    log("Ten least important features", lowten) )]
+    log("Ten most important features", topten)
+    log("Ten least important features", lowten)
