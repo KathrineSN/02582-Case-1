@@ -7,7 +7,7 @@ import numpy as np
 from pelutils import log, TT, Levels
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set_style('darkgrid')
+# sns.set_style('darkgrid')
 
 
 def fit_model(model, x, y):
@@ -56,31 +56,43 @@ def error(y: np.ndarray, y_hat: np.ndarray) -> float:
     dev = 1 - y_hat / y
     return np.abs(dev).mean()
 
-def fit(x: pd.DataFrame, y: np.ndarray, models: list, num_splits: int) -> list[tuple]:
+def fit(x: pd.DataFrame, y: np.ndarray, models: list, K1: int, K2: int) -> list[tuple]:
     # Returns a list of tuples (model, weight, mean total accuracy)
     # Page 175 in ML book
     N = len(x)
     S = len(models)
-    log.section("Fitting %i models using %i splits" % (S, num_splits))
+    log.section("Fitting %i models using %i, %i splits" % (S, K1, K2))
 
-    E_val = np.empty((S, num_splits))
-    for i, (train_idx, val_idx) in enumerate(KFold(n_splits=num_splits, shuffle=True).split(x)):
-        log("Split %i / %i" % (i+1, num_splits))
-        x_train, y_train = x.iloc[train_idx], y[train_idx]
-        x_val, y_val = x.iloc[val_idx], y[val_idx]
-        metadatas = list()
+    E_test = np.zeros(K1)
+    for i, (par_idx, test_idx) in enumerate(KFold(n_splits=K1).split(x)):
+        log.debug("Outer split %i / %i" % (i+1, K1))
+        x_par, y_par = x.iloc[par_idx], y[par_idx]
+        x_test, y_test = x.iloc[test_idx], y[test_idx]
+        E_val = np.zeros((S, K2))
+        for j, (train_idx, val_idx) in enumerate(KFold(n_splits=K2).split(x_par)):
+            log.debug("Inner split %i / %i" % (j+1, K2))
+            x_train, y_train = x.iloc[train_idx], y[train_idx]
+            x_val, y_val = x.iloc[val_idx], y[val_idx]
+            metadatas = list()
+            for s in range(S):
+                with TT.profile(str(models[s])):
+                    metadatas.append(fit_model(models[s], x_train, y_train))
+                y_hat = predict(models[s], x_val, metadatas[s])
+                E_val[s, j] = error(y_val, y_hat)
+
+        E_gen = np.zeros(S)
         for s in range(S):
-            log.debug("Fitting model %i / %i: %s" % (s+1, S, models[s]))
-            with TT.profile("%s" % models[s]):
-                b, means, stds = fit_model(models[s], x_train, y_train)
-            metadatas.append((b, means, stds))
-            y_hat = predict(models[s], x_val, metadatas[-1])
-            E_val[s, i] = error(y_val, y_hat)
+            E_gen[s] = len(x_val) / len(x_par) * E_val[s].sum()
+        s_star = np.argmin(E_gen)
+        best_model = models[s_star]
 
-    best_models = E_val.argmin(axis=0)
-    weights = np.zeros(S)
-    model_idcs, counts = np.unique(best_models, return_counts=True)
-    return [(models[s], c/num_splits, E_val[s].mean()) for s, c in zip(model_idcs, counts)]
+        best_metadata = fit_model(best_model, x_par, y_par)
+        y_hat = predict(best_model, x_test, best_metadata)
+        E_test[i] = error(y_test, y_hat)
+
+    E_gen = len(x_test) / N * E_test.sum()
+
+    return E_gen
 
 def feature_importance(X,y):
     num_train = int(0.2*len(X))
